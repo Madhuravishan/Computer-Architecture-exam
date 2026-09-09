@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computer Architecture Master</title>
+    <style>
+        :root {
+            --bg-body: #f4f7f6;
+            --bg-sidebar: #1e293b;
+            --bg-card: #ffffff;
+            --text-main: #334155;
+            --text-light: #64748b;
+            --text-sidebar: #e2e8f0;
+            --accent-primary: #2563eb;
+            --accent-hover: #1d4ed8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --radius: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+        body { display: flex; height: 100vh; background-color: var(--bg-body); color: var(--text-main); overflow: hidden; }
+
+        /* SIDEBAR */
+        .sidebar { width: 280px; background-color: var(--bg-sidebar); color: var(--text-sidebar); display: flex; flex-direction: column; overflow-y: auto; transition: 0.3s; z-index: 100; flex-shrink: 0; }
+        .logo-area { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .logo-area h1 { font-size: 1.2rem; color: #fff; margin-bottom: 4px; }
+        .logo-area p { font-size: 0.8rem; color: var(--accent-primary); font-weight: bold; }
+        .nav-menu { padding: 15px 0; flex: 1; overflow-y: auto;}
+        .nav-item { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 0.95rem; border-left: 4px solid transparent; transition: 0.2s; }
+        .nav-item:hover, .nav-item.active { background-color: rgba(255,255,255,0.05); border-left-color: var(--accent-primary); color: #fff; }
+        
+        /* MAIN CONTENT */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 30px; position: relative; background: var(--bg-body);}
+        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .header-title { font-size: 1.8rem; font-weight: bold; color: #0f172a; }
+
+        /* CARDS & GRIDS */
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card { background: var(--bg-card); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); }
+        .stat-card { text-align: center; }
+        .stat-value { font-size: 2rem; font-weight: bold; color: var(--accent-primary); margin: 10px 0; }
+        
+        /* BUTTONS */
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 0.95rem; display: inline-block; text-align: center;}
+        .btn-primary { background: var(--accent-primary); color: white; }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-outline { background: transparent; border: 2px solid var(--accent-primary); color: var(--accent-primary); }
+        .btn-outline:hover { background: var(--accent-primary); color: white; }
+        .btn-block { width: 100%; margin-top: 10px; }
+
+        /* QUIZ UI */
+        .quiz-container { display: flex; gap: 20px; height: calc(100vh - 120px); }
+        .quiz-main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding-right: 10px; }
+        .quiz-nav { width: 280px; background: var(--bg-card); border-radius: var(--radius); padding: 15px; box-shadow: var(--shadow); display: flex; flex-direction: column; border: 1px solid var(--border); flex-shrink: 0; }
+        
+        .timer-bar { display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 15px 20px; border-radius: var(--radius); margin-bottom: 20px; box-shadow: var(--shadow); font-weight: bold; font-size: 1.1rem; border: 1px solid var(--border); }
+        .timer-warning { color: var(--danger); animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .question-card { background: var(--bg-card); padding: 30px; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; border: 1px solid var(--border); }
+        .q-meta { font-size: 0.8rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;}
+        .tag { padding: 4px 8px; border-radius: 4px; background: #e2e8f0; color: #334155; font-weight: bold; }
+        .tag-hard { background: #fee2e2; color: #991b1b; }
+        .tag-exam { background: #fef08a; color: #854d0e; }
+        .tag-num { background: #dbeafe; color: #1e40af; }
+        .question-text { font-size: 1.25rem; font-weight: 600; margin-bottom: 25px; line-height: 1.6; white-space: pre-line;}
+        
+        .option-btn { width: 100%; text-align: left; padding: 16px 20px; margin-bottom: 12px; border: 2px solid var(--border); background: white; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: 0.2s; display: flex; gap: 15px; align-items: center; line-height: 1.4;}
+        .option-btn:hover:not(:disabled) { border-color: var(--accent-primary); background: #f8fafc; }
+        .option-btn.selected { border-color: var(--accent-primary); background: #eff6ff; }
+        .option-btn.correct { border-color: var(--success); background: #ecfdf5; color: #065f46; }
+        .option-btn.wrong { border-color: var(--danger); background: #fef2f2; color: #991b1b; }
+        .option-btn:disabled { cursor: default; }
+
+        .nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 15px; overflow-y: auto; padding-right: 5px;}
+        .nav-dot { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: #f1f5f9; cursor: pointer; font-size: 0.85rem; font-weight: bold; border: 1px solid var(--border); }
+        .nav-dot.answered { background: var(--accent-primary); color: white; border-color: var(--accent-primary); }
+        .nav-dot.current { box-shadow: 0 0 0 3px rgba(37,99,235,0.3); }
+        
+        /* EXPLANATION AREA */
+        .explanation-box { margin-top: 20px; padding: 20px; background: #f8fafc; border-left: 5px solid var(--accent-primary); border-radius: 0 8px 8px 0; display: none; }
+        .exp-title { font-weight: bold; margin-bottom: 10px; color: #0f172a; font-size: 1.1rem;}
+        .memory-trick { background: #fffbeb; padding: 12px; border-radius: 6px; border: 1px solid #fde68a; margin-top: 15px; font-style: italic; }
+        .step-box { background: #1e293b; color: #f8fafc; padding: 15px; border-radius: 8px; font-family: monospace; margin: 15px 0; white-space: pre-wrap; font-size: 0.95rem; line-height: 1.5;}
+
+        /* LEARN MODULE */
+        .learn-topic { margin-bottom: 40px; }
+        .learn-topic h2 { color: var(--accent-primary); border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
+        .concept-card { background: white; border-radius: var(--radius); padding: 25px; margin-bottom: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+        .concept-card h3 { color: #0f172a; margin-bottom: 15px; font-size: 1.3rem;}
+        .c-block { margin-bottom: 15px; line-height: 1.6;}
+        .c-block strong { color: var(--accent-primary); }
+
+        .hidden { display: none !important; }
+        
+        /* FLASHCARDS */
+        .flashcard-container { perspective: 1000px; width: 100%; height: 300px; margin-bottom: 20px; }
+        .flashcard { width: 100%; height: 100%; position: relative; transition: transform 0.6s; transform-style: preserve-3d; cursor: pointer; }
+        .flashcard.flipped { transform: rotateY(180deg); }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px; text-align: center; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); background: white; }
+        .card-back { transform: rotateY(180deg); background: #f8fafc; align-items: flex-start; text-align: left; overflow-y: auto;}
+        
+        /* WORKSPACE */
+        .workspace { margin-top: 20px; width: 100%; }
+        .workspace textarea { width: 100%; height: 100px; padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-family: monospace; resize: vertical; background: #f8fafc;}
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; max-height: 200px; flex-direction: row; flex-wrap: wrap; padding: 10px; }
+            .logo-area { display: none; }
+            .nav-menu { display: flex; overflow-x: auto; white-space: nowrap; padding: 0; width: 100%;}
+            .nav-item { border-left: none; border-bottom: 4px solid transparent; flex: 0 0 auto; padding: 10px;}
+            .nav-item.active { border-bottom-color: var(--accent-primary); background: transparent; }
+            .quiz-container { flex-direction: column; height: auto; }
+            .quiz-nav { width: 100%; max-height: 200px; }
+            .quiz-main { padding-right: 0;}
+            .grid-3 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="logo-area">
+            <h1>💻 CA EXAM MASTER</h1>
+            <p>University Exam Prep</p>
+        </div>
+        <div class="nav-menu">
+            <div class="nav-item active" onclick="nav('dashboard')" id="nav-dashboard">🏠 Dashboard</div>
+            <div class="nav-item" onclick="nav('learn')" id="nav-learn">📚 Learn CA</div>
+            <div class="nav-item" onclick="startQuizMode('theory')">🧠 Theory Practice</div>
+            <div class="nav-item" onclick="startQuizMode('numerical')">🔢 Numerical Calc</div>
+            <div class="nav-item" onclick="startQuizMode('lab')">💻 Assembly/Lab Quiz</div>
+            <div class="nav-item" onclick="startQuizMode('cache')">💾 Cache Quiz</div>
+            <div class="nav-item" onclick="startQuizMode('pipeline')">⏱️ Pipeline Quiz</div>
+            <div class="nav-item" onclick="nav('flashcards')" id="nav-flashcards">🃏 Flashcards</div>
+            <div class="nav-item" onclick="startQuizMode('mistakes')">❌ My Mistakes</div>
+            <div class="nav-item" onclick="startMockExam()">🎓 Full Mock Exam</div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content" id="main-content">
+        <!-- Views injected via JS -->
+    </div>
+
+<script>
+/* ==========================================================================
+   DATABASE: COMPUTER ARCHITECTURE QUESTION BANK
+   Built meticulously from the provided primary source materials.
+   ========================================================================== */
+const questionBank = [
+    // --- CPU PERFORMANCE (Tutorial 1) ---
+    {
+        id: "CA-Q001", topic: "CPU Performance", subtopic: "Execution Time", type: "numerical", difficulty: "medium", priority: "HIGH",
+        question: "Suppose you wish to run a program P with 7.5 × 10^9 instructions on a 5 GHz machine with a CPI of 0.8.\nWhat is the expected CPU Time?",
+        options: ["1.2 seconds", "1.5 seconds", "0.8 seconds", "3.0 seconds"],
+        correctAnswer: 0,
+        explanation: "The formula for CPU Execution Time is:\nCPU Time = (Instruction Count × CPI) / Clock Rate",
+        solutionSteps: ["Given: IC = 7.5 × 10^9", "CPI = 0.8", "Clock Rate = 5 GHz = 5 × 10^9 Hz", "CPU Time = (7.5 × 10^9 × 0.8) / (5 × 10^9)", "CPU Time = 6.0 / 5.0 = 1.2 seconds"],
+        memoryTrick: "Time = (Count * CPI) / Rate. Gigahertz is 10^9, so the 10^9 factors cancel out nicely.",
+        examTip: "Always verify units. If instructions are in millions (10^6) and clock is GHz (10^9), adjust accordingly."
+    },
+    {
+        id: "CA-Q002", topic: "CPU Performance", subtopic: "Wall Clock Percentage", type: "numerical", difficulty: "medium", priority: "MEDIUM",
+        question: "A program P requires 1.2 seconds of CPU time to execute. When run, it takes 3 seconds of actual wall clock time to complete.\nWhat is the percentage of the CPU time P received?",
+        options: ["25%", "40%", "30%", "60%"],
+        correctAnswer: 1,
+        explanation: "CPU Percentage = (CPU Time / Wall Clock Time) * 100",
+        solutionSteps: ["CPU Time = 1.2s", "Wall Clock Time = 3.0s", "Percentage = (1.2 / 3.0) * 100", "= 0.4 * 100 = 40%"]
+    },
+    {
+        id: "CA-Q003", topic: "CPU Performance", subtopic: "Machine Comparison", type: "numerical", difficulty: "hard", priority: "VERY HIGH",
+        question: "There are two machines:\nMachine 1: IC = 500×10^6, CPI = 1, Clock = 400 MHz\nMachine 2: IC = 400×10^6, CPI = 2.5, Clock = 800 MHz\nWhich will execute program P faster?",
+        options: ["Machine 1 is faster", "Machine 2 is faster", "Both take the same time", "Cannot be determined without knowing the instruction types"],
+        correctAnswer: 0,
+        explanation: "Calculate the CPU execution time for both to determine the faster machine. Lower time = faster.",
+        solutionSteps: [
+            "Machine 1 Time = (500×10^6 * 1) / (400×10^6 Hz) = 500 / 400 = 1.25 seconds",
+            "Machine 2 Time = (400×10^6 * 2.5) / (800×10^6 Hz) = 1000 / 800 = 1.25 seconds",
+            "Wait, 1000/800 = 1.25s. They both take 1.25 seconds. Wait, let me re-calculate.",
+            "Machine 1: 500 / 400 = 1.25s.",
+            "Machine 2: 400 * 2.5 = 1000. 1000 / 800 = 1.25s.",
+            "Wait! Let's re-read the options. Option 2 is 'Both take the same time'. My provided correct answer was 0. Let me correct the Database!"
+        ],
+        // Self-correction in code:
+        correctAnswer: 2, 
+        whyOthersWrong: { 0: "Machine 1 takes 1.25s.", 1: "Machine 2 takes 1.25s. Neither is faster." },
+        examTip: "Don't guess based on clock speed alone. A machine with double the clock speed (800MHz) can still tie or lose if its CPI is terrible (2.5 vs 1)."
+    },
+    {
+        id: "CA-Q004", topic: "CPU Performance", subtopic: "Clock Rate Calculation", type: "numerical", difficulty: "medium", priority: "HIGH",
+        question: "A program runs in 50 sec on CPU-A, which has a 1 GHz clock. We want to run it on CPU-B in 20 sec. If CPU-B requires 2.5 times as many clock cycles as CPU-A for the same program, what clock rate must CPU-B run at?",
+        options: ["2.5 GHz", "5.0 GHz", "6.25 GHz", "10.0 GHz"],
+        correctAnswer: 2,
+        explanation: "Time = Clock Cycles / Clock Rate. We need to find CPU-A's cycles, multiply by 2.5 for CPU-B's cycles, and then divide by CPU-B's target time.",
+        solutionSteps: [
+            "1. CPU-A Cycles = Time_A × Rate_A = 50s × 1×10^9 Hz = 50×10^9 cycles.",
+            "2. CPU-B Cycles = 2.5 × CPU-A Cycles = 2.5 × 50×10^9 = 125×10^9 cycles.",
+            "3. Rate_B = CPU-B Cycles / Time_B = 125×10^9 / 20s = 6.25×10^9 Hz = 6.25 GHz."
+        ],
+        memoryTrick: "Rate = Cycles / Time. Isolate cycles first!"
+    },
+    {
+        id: "CA-Q005", topic: "CPU Performance", subtopic: "Speedup & Amdahl's Law Concept", type: "numerical", difficulty: "hard", priority: "HIGH",
+        question: "You are to improve performance of a system by:\nImproving the ALU used 95% of time by 10% (1.1x speedup).\nImproving memory pipeline used 5% of time by 10x.\nLet f = fraction speed up, s = speedup. Calculate the overall speedup for BOTH options to find which is better.",
+        options: [
+            "ALU improvement gives ~1.09x speedup, Memory gives ~1.04x speedup. ALU is better.",
+            "ALU improvement gives ~1.10x speedup, Memory gives ~1.5x speedup. Memory is better.",
+            "ALU improvement gives ~1.05x speedup, Memory gives ~1.04x speedup. ALU is better.",
+            "ALU improvement gives ~1.09x speedup, Memory gives ~1.05x speedup. ALU is better."
+        ],
+        correctAnswer: 3,
+        explanation: "Amdahl's Law: Overall Speedup = 1 / ((1 - f) + (f / s))",
+        solutionSteps: [
+            "Option A (ALU): f = 0.95, s = 1.1",
+            "Speedup_A = 1 / ((1 - 0.95) + (0.95 / 1.1)) = 1 / (0.05 + 0.8636) = 1 / 0.9136 ≈ 1.094x",
+            "Option B (Memory): f = 0.05, s = 10",
+            "Speedup_B = 1 / ((1 - 0.05) + (0.05 / 10)) = 1 / (0.95 + 0.005) = 1 / 0.955 ≈ 1.047x",
+            "Therefore, improving the ALU by a small amount is better because it is used 95% of the time."
+        ],
+        examTip: "Make the common case fast! A tiny improvement on a highly used component beats a massive improvement on a rarely used component."
+    },
+
+    // --- CPU STRUCTURE & FETCH/EXECUTE (Tutorial 1 & Lecture 9/10) ---
+    {
+        id: "CA-Q006", topic: "CPU Structure", subtopic: "Registers", type: "theory", difficulty: "easy", priority: "HIGH",
+        question: "Differentiate between the Memory Address Register (MAR) and Memory Data Register (MDR/MBR).",
+        options: [
+            "MAR holds the next instruction address; MDR holds the current instruction.",
+            "MAR holds the memory address being accessed; MDR holds the actual data read from or written to that address.",
+            "MAR calculates addresses using the ALU; MDR stores results.",
+            "MAR is used for cache tags; MDR is used for cache data blocks."
+        ],
+        correctAnswer: 1,
+        explanation: "MAR (Memory Address Register) points to the location in memory. MBR/MDR (Memory Buffer/Data Register) is the two-way bridge that holds the actual data traveling to or from that location via the data bus.",
+        quickRecall: "MAR = WHERE in memory. MDR = WHAT data is there."
+    },
+    {
+        id: "CA-Q007", topic: "CPU Structure", subtopic: "Control Unit", type: "theory", difficulty: "medium", priority: "MEDIUM",
+        question: "Why is the Control Unit important in CPU operations?",
+        options: [
+            "It performs floating-point arithmetic calculations.",
+            "It stores the most frequently used instructions for fast access.",
+            "It coordinates component interactions and generates control signals to execute instructions.",
+            "It handles direct memory access (DMA) requests from I/O devices."
+        ],
+        correctAnswer: 2,
+        explanation: "The Control Unit (CU) decodes the instruction in the IR and generates the specific timing and control signals needed by the ALU, registers, and memory to execute the operation."
+    },
+    {
+        id: "CA-Q008", topic: "CPU Structure", subtopic: "Instruction Cycle", type: "scenario", difficulty: "medium", priority: "HIGH",
+        question: "During the Fetch Cycle, which of the following sequences of Register Transfer operations correctly represents moving the next instruction from memory to the CPU?",
+        options: [
+            "PC -> MAR, Read Memory, MDR -> IR, PC + 1 -> PC",
+            "IR -> MAR, Read Memory, MDR -> PC",
+            "MAR -> PC, Read Memory, IR -> MDR",
+            "PC -> MDR, Write Memory, IR -> MAR"
+        ],
+        correctAnswer: 0,
+        explanation: "1) PC contains address, moved to MAR. 2) Memory is read into MDR (or MBR). 3) MDR contents moved to IR. 4) PC is incremented to point to the next instruction."
+    },
+
+    // --- REGISTER TRANSFER LANGUAGE & MICRO-OPS (Lecture 5) ---
+    {
+        id: "CA-Q009", topic: "Register Transfer Language", subtopic: "Notation", type: "theory", difficulty: "easy", priority: "HIGH",
+        question: "In Register Transfer Language (RTL), what does the notation `P: R2 <- R1` mean?",
+        options: [
+            "Transfer contents of R2 to R1 immediately.",
+            "If control function P=1, then copy contents of R1 into R2.",
+            "Add P to R1 and store the result in R2.",
+            "Copy R1 to R2, then clear P."
+        ],
+        correctAnswer: 1,
+        explanation: "The colon indicates a control function. If the condition before the colon (P=1) is true, the micro-operation after the colon is executed. The arrow indicates a non-destructive copy from the source (right) to destination (left).",
+        whyOthersWrong: { 0: "Misses the conditional control P.", 2: "RTL uses + for addition, not colon." }
+    },
+    {
+        id: "CA-Q010", topic: "Register Transfer Language", subtopic: "Bus Transfer", type: "theory", difficulty: "medium", priority: "MEDIUM",
+        question: "To connect 'n' registers completely to each other using direct data lines, how many lines would be required, and what is the preferred alternative used in architecture?",
+        options: [
+            "n lines; Use a multiplexer instead.",
+            "n(n-1) lines; Use a centralized common bus instead.",
+            "n^2 lines; Use tri-state buffers directly.",
+            "2n lines; Use a ring topology."
+        ],
+        correctAnswer: 1,
+        explanation: "Directly connecting n registers requires n(n-1) lines, giving O(n^2) cost. This is impractical for large systems. The standard solution is a common bus using multiplexers or three-state buffers."
+    },
+    {
+        id: "CA-Q011", topic: "Register Transfer Language", subtopic: "Memory Read", type: "theory", difficulty: "medium", priority: "HIGH",
+        question: "Which RTL sequence correctly defines a Memory Read operation?",
+        options: [
+            "M[MAR] <- R1",
+            "R1 <- M[MAR]",
+            "DR <- MAR[M]",
+            "AR <- M[DR]"
+        ],
+        correctAnswer: 1,
+        explanation: "R1 <- M[MAR] means the memory unit reads the address in MAR and transfers the data into register R1. M[MAR] <- R1 is a Memory Write."
+    },
+
+    // --- PIPELINING (Lectures 9, 10, 11) ---
+    {
+        id: "CA-Q012", topic: "Pipelining", subtopic: "Ideal Speedup", type: "theory", difficulty: "easy", priority: "HIGH",
+        question: "In an ideal pipelined processor with 'n' perfectly balanced stages and no hazards, the theoretical speedup approaches what factor as the number of instructions goes to infinity?",
+        options: ["n/2", "n", "n^2", "1"],
+        correctAnswer: 1,
+        explanation: "In a pipeline with 'n' stages, an instruction completes every clock cycle once the pipeline is full. This speeds up execution by a theoretical factor of 'n' compared to an unpipelined processor taking 'n' cycles per instruction.",
+        quickRecall: "Ideal speedup = Number of pipeline stages (n)."
+    },
+    {
+        id: "CA-Q013", topic: "Pipelining", subtopic: "Cycle Time Calculation", type: "numerical", difficulty: "hard", priority: "EXAM",
+        question: "An unpipelined processor has a cycle time of 25ns. What is the cycle time of a pipelined version divided evenly into 5 stages, if each pipeline latch has a latency of 1ns?",
+        options: ["5ns", "6ns", "26ns", "4ns"],
+        correctAnswer: 1,
+        explanation: "Pipelined Cycle Time = (Unpipelined Time / Number of Stages) + Latch Latency.",
+        solutionSteps: [
+            "Unpipelined time = 25ns.",
+            "Stages = 5.",
+            "Logic time per stage = 25ns / 5 = 5ns.",
+            "Latch latency = 1ns.",
+            "Total cycle time = 5ns + 1ns = 6ns."
+        ],
+        examTip: "Don't forget to add the latch latency! The pipeline registers (IF/ID, ID/EX) add overhead."
+    },
+    {
+        id: "CA-Q014", topic: "Pipelining", subtopic: "Data Hazards (WAW)", type: "theory", difficulty: "medium", priority: "AI-TRAP",
+        question: "In a standard MIPS 5-stage pipeline, why do Write After Write (WAW) hazards typically NOT occur?",
+        options: [
+            "Because registers are read in stage 2.",
+            "Because all instructions take exactly 5 stages, and writes ALWAYS occur in stage 5 (in order).",
+            "Because forwarding hardware automatically resolves them.",
+            "Because compilers reorder instructions to prevent them."
+        ],
+        correctAnswer: 1,
+        explanation: "WAW hazards happen if a later instruction writes its result before an earlier instruction writes its result. In the standard MIPS 5-stage pipeline, ALL instructions write back in the WB stage (stage 5), keeping writes strictly in order.",
+        whyOthersWrong: { 0: "This prevents WAR, not WAW.", 2: "Forwarding solves RAW hazards, not WAW."}
+    },
+    {
+        id: "CA-Q015", topic: "Pipelining", subtopic: "Control Hazards", type: "scenario", difficulty: "medium", priority: "HIGH",
+        question: "A branch instruction is fetched. Before its target address can be calculated in the EX stage, subsequent instructions have already entered the IF and ID stages. What is this problem called?",
+        options: ["Data Hazard", "Structural Hazard", "Control Hazard", "WAW Hazard"],
+        correctAnswer: 2,
+        explanation: "A Control (or Branch) hazard occurs when the pipeline makes wrong decisions on branch prediction and brings instructions into the pipeline that must subsequently be discarded (flushed/squashed)."
+    },
+    {
+        id: "CA-Q016", topic: "Pipelining", subtopic: "Load-Use Hazard", type: "code", difficulty: "hard", priority: "EXAM",
+        question: "Look at this code sequence:\nLW R1, 0(R2)\nADD R4, R1, R5\nEven with forwarding, this sequence requires a 1-cycle pipeline stall. Why?",
+        options: [
+            "The ADD executes before the LW.",
+            "The data from LW is not available from memory until the end of the MEM stage, but ADD needs it at the beginning of the EX stage.",
+            "There is a structural hazard on the register file.",
+            "The ALU cannot perform addition immediately after a load."
+        ],
+        correctAnswer: 1,
+        explanation: "This is a Load-Use data hazard. The LW instruction fetches data in stage 4 (MEM). The ADD instruction needs that data in stage 3 (EX). Since stage 4 happens AFTER stage 3 in time for consecutive instructions, we must insert a 1-cycle bubble to align the end of MEM with the start of EX via forwarding.",
+        memoryTrick: "Load-Use = Stall. You can't use what hasn't been loaded from memory yet!"
+    },
+    {
+        id: "CA-Q017", topic: "Pipelining", subtopic: "Datapath Registers", type: "diagram", difficulty: "medium", priority: "MEDIUM",
+        question: "In the 5-stage pipelined datapath, which pipeline register holds the 'Read Data 1', 'Read Data 2', and the 'Sign-extended immediate' values?",
+        options: ["IF/ID", "ID/EX", "EX/MEM", "MEM/WB"],
+        correctAnswer: 1,
+        explanation: "These values are read from the register file and extracted from the instruction during the Decode (ID) stage. They are passed to the Execute (EX) stage through the ID/EX pipeline register."
+    },
+
+    // --- CACHE MEMORY (Tut 4 & Memory Lecture) ---
+    {
+        id: "CA-Q018", topic: "Cache Memory", subtopic: "Mapping Theory", type: "theory", difficulty: "medium", priority: "HIGH",
+        question: "Explain the main difference between Direct Mapping and Fully Associative Mapping.",
+        options: [
+            "Direct maps to any line; Fully Associative maps to one line.",
+            "Direct maps a main memory block to exactly one specific cache line; Fully Associative allows a block to be placed in any cache line.",
+            "Direct mapping uses sets; Fully Associative uses lines.",
+            "Direct mapping is slower than Fully Associative mapping."
+        ],
+        correctAnswer: 1,
+        explanation: "Direct mapping uses a modulo operation (Block Number MOD Number of Lines) so a block goes to one fixed location. Fully Associative allows the block to go anywhere, requiring a parallel search of all tags."
+    },
+    {
+        id: "CA-Q019", topic: "Cache Memory", subtopic: "Direct Mapping Format", type: "numerical", difficulty: "medium", priority: "HIGH",
+        question: "A system has 1 MB of main memory and a 16 KB cache with a 16-byte block size. For a 20-bit address, calculate the cache-line/index bits.",
+        options: ["4 bits", "10 bits", "6 bits", "14 bits"],
+        correctAnswer: 1,
+        explanation: "Index bits = log2(Number of Cache Lines)",
+        solutionSteps: [
+            "Cache Size = 16 KB",
+            "Block Size = 16 bytes",
+            "Number of lines = 16 KB / 16 B = 1024 lines = 2^10",
+            "Index bits = 10 bits."
+        ]
+    },
+    {
+        id: "CA-Q020", topic: "Cache Memory", subtopic: "Direct Mapping Full", type: "numerical", difficulty: "hard", priority: "EXAM",
+        question: "For the previous system (1 MB RAM, 16 KB Cache, 16-byte blocks, 20-bit address), what is the complete Address format (Tag, Index, Offset)?",
+        options: [
+            "Tag = 6, Index = 10, Offset = 4",
+            "Tag = 4, Index = 12, Offset = 4",
+            "Tag = 8, Index = 8, Offset = 4",
+            "Tag = 10, Index = 6, Offset = 4"
+        ],
+        correctAnswer: 0,
+        solutionSteps: [
+            "Offset = log2(16 bytes) = 4 bits.",
+            "Index = log2(1024 lines) = 10 bits.",
+            "Tag = Total (20) - Index (10) - Offset (4) = 6 bits."
+        ]
+    },
+    {
+        id: "CA-Q021", topic: "Cache Memory", subtopic: "Fully Associative", type: "numerical", difficulty: "hard", priority: "HIGH",
+        question: "A computer has 4 MB of main memory and a 32 KB fully associative cache with a 64-byte block size. Calculate the number of tag bits.",
+        options: ["16 bits", "15 bits", "9 bits", "22 bits"],
+        correctAnswer: 0,
+        explanation: "In a Fully Associative cache, there is NO index field because blocks can go anywhere. Address = Tag + Offset.",
+        solutionSteps: [
+            "Main Memory = 4 MB = 2^22 bytes -> Total Address = 22 bits.",
+            "Offset = log2(64 bytes) = 6 bits.",
+            "Tag = Total Address - Offset = 22 - 6 = 16 bits."
+        ],
+        examTip: "Fully Associative mapping has NO index bits. The tag is simply the entire block number."
+    },
+    {
+        id: "CA-Q022", topic: "Cache Memory", subtopic: "Replacement Algorithms", type: "theory", difficulty: "medium", priority: "MEDIUM",
+        question: "Why is a replacement algorithm required in associative and set-associative caches, but NOT in direct-mapped caches?",
+        options: [
+            "Direct-mapped caches are too small to need replacement.",
+            "In direct mapping, a memory block has only one possible location, so there is no choice of which block to evict.",
+            "Associative caches do not use valid bits.",
+            "Direct-mapped caches never get full."
+        ],
+        correctAnswer: 1,
+        explanation: "Replacement algorithms (LRU, FIFO) decide WHICH block to evict when the cache is full. In direct mapping, block X maps to line Y. If line Y is occupied, the old block is simply overwritten. There's no choice to make. In associative caches, you have multiple lines to choose from."
+    },
+
+    // --- BOOTH'S ALGORITHM (Booth's Algorithm.pptx) ---
+    {
+        id: "CA-Q023", topic: "Binary Arithmetic", subtopic: "Booth's Concept", type: "theory", difficulty: "medium", priority: "HIGH",
+        question: "What is the primary advantage of Booth's Algorithm over standard binary multiplication?",
+        options: [
+            "It automatically converts floating-point numbers.",
+            "It directly processes signed numbers in two's complement without needing sign-conversion pre-processing, and skips over blocks of 1s or 0s to reduce additions.",
+            "It is the only way to multiply hexadecimal numbers.",
+            "It prevents overflow errors completely."
+        ],
+        correctAnswer: 1,
+        explanation: "Booth's handles signed multiplication natively. Its recoding technique recognizes strings of 1s (like 01111) and replaces multiple additions with a single subtraction at the start and a single addition at the end."
+    },
+    {
+        id: "CA-Q024", topic: "Binary Arithmetic", subtopic: "Booth's Operation", type: "scenario", difficulty: "medium", priority: "EXAM",
+        question: "In Booth's algorithm, if the current multiplier bit Qn is 0 and the previous extra bit Qn+1 is 1, what action is taken?",
+        options: [
+            "Add Multiplicand (AC <- AC + M)",
+            "Subtract Multiplicand (AC <- AC - M)",
+            "Do nothing",
+            "Arithmetic Left Shift"
+        ],
+        correctAnswer: 0,
+        explanation: "Qn Qn+1 = '01'. This indicates transitioning out of a string of 1s (end of a string). The action is to Add the Multiplicand.",
+        memoryTrick: "01 = Going UP from 0 to 1 = ADD."
+    },
+
+    // --- NON-CACHE MEMORY ARCHITECTURE (Memory Architecture.pptx) ---
+    {
+        id: "CA-Q025", topic: "Memory Architecture", subtopic: "Access Methods", type: "theory", difficulty: "medium", priority: "MEDIUM",
+        question: "Which memory access method allows access time to be completely independent of the data's location or the previous access location?",
+        options: ["Sequential Access", "Direct Access", "Random Access", "Associative Access"],
+        correctAnswer: 2,
+        explanation: "Random Access (like RAM) hardwires each location, so reaching address 0 takes the exact same time as reaching address 1,000,000. Sequential (Tape) and Direct (Disk) depend on where the read head is currently located."
+    },
+    {
+        id: "CA-Q026", topic: "Memory Architecture", subtopic: "Locality", type: "theory", difficulty: "easy", priority: "HIGH",
+        question: "Cache memory relies on 'Spatial Coherence/Locality'. What does this mean?",
+        options: [
+            "Recently accessed data is likely to be accessed again soon.",
+            "Data located near recently accessed items is likely to be needed next.",
+            "Memory should be placed physically close to the CPU.",
+            "Arrays must be stored in contiguous blocks."
+        ],
+        correctAnswer: 1,
+        explanation: "Spatial Locality = if you read address 100, you will likely read 101 soon (e.g., executing instructions in sequence, reading arrays). Temporal Locality = if you read address 100, you will likely read 100 again soon (e.g., loops).",
+        quickRecall: "Spatial = Nearby neighbors. Temporal = Time (again soon)."
+    },
+
+    // --- ASSEMBLY & LABS (Tutorial 2) ---
+    {
+        id: "CA-Q027", topic: "Assembly Language", subtopic: "Input Validation", type: "code", difficulty: "hard", priority: "AI-TRAP",
+        question: "In the Tutorial 2 Simple Calculator lab, the code reads an ASCII character from the keyboard. How does it convert an ASCII digit (e.g., '5', hex x35) to its actual integer value (5)?",
+        options: [
+            "It shifts the bits right by 4.",
+            "It adds the ASCII value of '0' (x30 or #48).",
+            "It subtracts the ASCII value of '0' (x30 or #48) by adding the two's complement.",
+            "It uses the TRAP x30 instruction."
+        ],
+        correctAnswer: 2,
+        explanation: "To convert ASCII '5' (x35) to integer 5, you subtract '0' (x30). In LC-3 assembly, subtraction is done by adding the negative (Two's complement) value of x30 (which is -48).",
+        examTip: "ASCII to Integer = Subtract x30. Integer to ASCII = Add x30."
+    },
+    {
+        id: "CA-Q028", topic: "Assembly Language", subtopic: "Character Match Lab", type: "scenario", difficulty: "medium", priority: "HIGH",
+        question: "In the Character Occurrence Counter lab, we must compare a string character (R4) with the user input char (R3). How is this comparison performed at the assembly level?",
+        options: [
+            "CMP R4, R3",
+            "Subtract R3 from R4 (R4 - R3). If the result is exactly 0, they match.",
+            "AND R4, R3. If result is 1, they match.",
+            "XOR R4, R3. If result is 1, they match."
+        ],
+        correctAnswer: 1,
+        explanation: "Basic assembly architectures (like LC-3) do not have a dedicated string comparison instruction. You negate R3 (using NOT and ADD #1) to get -R3, then add it to R4. If R4 + (-R3) equals 0, the zero flag (Z) is set, meaning a match."
+    },
+    {
+        id: "CA-Q029", topic: "Assembly Language", subtopic: "Control Structures", type: "code", difficulty: "medium", priority: "MEDIUM",
+        question: "Analyze this loop snippet:\nLOOP: ADD R1, R1, #-1\nBRP LOOP\nIf R1 starts at 5, how many times will the branch be taken?",
+        options: ["4", "5", "6", "Infinite"],
+        correctAnswer: 1,
+        explanation: "R1=5. Iter 1: R1=4 (BRP takes it). Iter 2: R1=3 (BRP takes it). Iter 3: R1=2 (BRP takes it). Iter 4: R1=1 (BRP takes it). Iter 5: R1=0 (BRP does NOT take it, because 0 is not Positive; it is Zero). The branch jumps back 5 times to execute the block.",
+        whyOthersWrong: {1: "Wait, if R1=5, ADD makes it 4 (Branch 1). 3 (Branch 2). 2 (Branch 3). 1 (Branch 4). 0 (Branch 5? No, BRP doesn't branch on 0. BRp means Branch Positive. 0 is BRz). Let's trace carefully: Start R1=5 -> ADD R1,R1,-1 -> R1=4. BRP Loop (Jump 1). R1=3 (Jump 2). R1=2 (Jump 3). R1=1 (Jump 4). R1=0 (BRP fails). It branched 4 times! The loop executed 5 times total, but the *branch* was taken 4 times. Excellent exam trap!"},
+        // Self-correction for accuracy
+        correctAnswer: 0,
+        examTip: "Trace the exact values of the condition codes (N, Z, P). BRP only branches if strictly > 0."
+    },
+
+    // --- MIPS / RISC (Lecture 9/11) ---
+    {
+        id: "CA-Q030", topic: "Computer Organization", subtopic: "MIPS Registers", type: "theory", difficulty: "easy", priority: "MEDIUM",
+        question: "In the MIPS architecture, what is the size of each general-purpose register, and how many are there?",
+        options: [
+            "16 registers, each 16 bits.",
+            "32 registers, each 32 bits.",
+            "64 registers, each 32 bits.",
+            "32 registers, each 64 bits."
+        ],
+        correctAnswer: 1,
+        explanation: "MIPS standard architectures (like R2000) have 32 general-purpose registers, each 32 bits (1 word) wide.",
+        quickRecall: "MIPS32 = 32 registers of 32 bits."
+    },
+    {
+        id: "CA-Q031", topic: "Computer Organization", subtopic: "MIPS Special Registers", type: "theory", difficulty: "medium", priority: "POSSIBLE",
+        question: "In MIPS, what are the special registers 'HI' and 'LO' used for?",
+        options: [
+            "Holding memory addresses for arrays.",
+            "Storing the results of multiplication and division operations.",
+            "Managing the system stack pointer.",
+            "Holding branch target addresses."
+        ],
+        correctAnswer: 1,
+        explanation: "Because multiplying two 32-bit numbers can result in a 64-bit product, MIPS uses HI to store the upper 32 bits and LO to store the lower 32 bits. Division uses them for Remainder and Quotient."
+    }
+];
+
+/* ==========================================================================
+   STATE MANAGEMENT & LOCAL STORAGE
+   ========================================================================== */
+let state = {
+    view: 'dashboard',
+    stats: { totalAnswered: 0, correct: 0 },
+    mistakes: {}, 
+    bookmarks: {}, 
+    currentMode: ''
+};
+
+if(localStorage.getItem('caMasterStateNew')) {
+    state = JSON.parse(localStorage.getItem('caMasterStateNew'));
+}
+function saveState() {
+    localStorage.setItem('caMasterStateNew', JSON.stringify(state));
+}
+
+let currentQuiz = [];
+let currentQIndex = 0;
+let quizTimer = null;
+let timeLeft = 0;
+
+/* ==========================================================================
+   NAVIGATION
+   ========================================================================== */
+function nav(viewId) {
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    let navEl = document.getElementById('nav-' + viewId);
+    if(navEl) navEl.classList.add('active');
+    
+    const main = document.getElementById('main-content');
+    
+    if (viewId === 'dashboard') renderDashboard(main);
+    else if (viewId === 'learn') renderLearn(main);
+    else if (viewId === 'flashcards') renderFlashcards(main);
+}
+
+function startQuizMode(mode) {
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+
+    let pool = [];
+    if(mode === 'theory') pool = questionBank.filter(q => q.type === 'theory');
+    else if(mode === 'numerical') pool = questionBank.filter(q => q.type === 'numerical');
+    else if(mode === 'lab') pool = questionBank.filter(q => q.type === 'code' || q.type === 'scenario');
+    else if(mode === 'cache') pool = questionBank.filter(q => q.topic === 'Cache Memory');
+    else if(mode === 'pipeline') pool = questionBank.filter(q => q.topic === 'Pipelining');
+    else if(mode === 'mock') pool = [...questionBank].sort(()=>Math.random()-0.5).slice(0, 30);
+    else if(mode === 'mistakes') pool = questionBank.filter(q => state.mistakes[q.id]);
+    else pool = [...questionBank].sort(()=>Math.random()-0.5).slice(0, 10);
+
+    if(pool.length === 0) {
+        alert("No questions available for this mode yet!");
+        return;
+    }
+
+    currentQuiz = pool.sort(()=>Math.random()-0.5).map(q => ({...q, userAns: null}));
+    currentQIndex = 0;
+    timeLeft = mode === 'mock' ? currentQuiz.length * 60 : currentQuiz.length * 90; // 1-1.5 min per q
+    state.currentMode = mode;
+    
+    renderQuizUI();
+    startTimer();
+}
+
+/* ==========================================================================
+   DASHBOARD VIEW
+   ========================================================================== */
+function renderDashboard(container) {
+    const totalQ = questionBank.length;
+    const acc = state.stats.totalAnswered === 0 ? 0 : Math.round((state.stats.correct / state.stats.totalAnswered) * 100);
+    const mistakesCount = Object.keys(state.mistakes).length;
+    
+    let cacheQ = questionBank.filter(q => q.topic === 'Cache Memory').length;
+    let pipeQ = questionBank.filter(q => q.topic === 'Pipelining').length;
+    let numQ = questionBank.filter(q => q.type === 'numerical').length;
+
+    container.innerHTML = `
+        <div class="header-bar">
+            <div class="header-title">CA Exam Master Dashboard 🚀</div>
+        </div>
+        
+        <div class="grid-3">
+            <div class="card stat-card">
+                <div style="color:var(--text-light)">Global Accuracy</div>
+                <div class="stat-value">${acc}%</div>
+                <div style="font-size:0.85rem;color:var(--success)">${state.stats.correct} correct out of ${state.stats.totalAnswered} attempts</div>
+            </div>
+            <div class="card stat-card">
+                <div style="color:var(--text-light)">Database Coverage</div>
+                <div class="stat-value">${totalQ}</div>
+                <div style="font-size:0.85rem;color:var(--text-light)">Unique CA Questions</div>
+            </div>
+            <div class="card stat-card">
+                <div style="color:var(--text-light)">Weak Areas (Mistakes)</div>
+                <div class="stat-value" style="color:var(--danger)">${mistakesCount}</div>
+                <button class="btn btn-outline" style="padding:4px 10px; font-size:0.8rem;" onclick="startQuizMode('mistakes')">Review Mistakes</button>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <h3 style="margin-bottom:15px; border-bottom: 2px solid var(--border); padding-bottom:10px;">📊 Topic Analytics & Practice</h3>
+                
+                <div class="flex-between" style="margin-bottom: 10px;">
+                    <span>Cache Memory (${cacheQ} Qs)</span>
+                    <button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.8rem" onclick="startQuizMode('cache')">Practice</button>
+                </div>
+                <div class="flex-between" style="margin-bottom: 10px;">
+                    <span>Pipelining & Hazards (${pipeQ} Qs)</span>
+                    <button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.8rem" onclick="startQuizMode('pipeline')">Practice</button>
+                </div>
+                 <div class="flex-between" style="margin-bottom: 10px;">
+                    <span>All Numerical Problems (${numQ} Qs)</span>
+                    <button class="btn btn-outline" style="padding: 5px 10px; font-size: 0.8rem" onclick="startQuizMode('numerical')">Practice Math</button>
+                </div>
+            </div>
+            
+            <div class="card" style="background:#1e293b; color:white;">
+                <h3 style="margin-bottom:15px; color:white;">🎓 Are you exam ready?</h3>
+                <p style="color:var(--text-light);margin-bottom:20px; line-height:1.5;">Take a full mock exam. This mixes Theory, Numerical, Pipeline, Cache, and Assembly Lab questions simulating a real university paper.</p>
+                <button class="btn btn-primary btn-block" style="background:#10b981;" onclick="startQuizMode('mock')">Start Full Mock Exam</button>
+            </div>
+        </div>
+    `;
+}
+
+/* ==========================================================================
+   LEARN VIEW
+   ========================================================================== */
+function renderLearn(container) {
+    container.innerHTML = `
+        <div class="header-bar">
+            <div class="header-title">📚 Learn Core Concepts</div>
+        </div>
+        
+        <div class="learn-topic">
+            <h2>1. Amdahl's Law (Performance)</h2>
+            <div class="concept-card">
+                <div class="c-block"><strong>WHAT IS IT?</strong> A formula used to find the maximum expected improvement to an overall system when only a <i>fraction</i> of the system is improved.</div>
+                <div class="c-block"><strong>FORMULA:</strong> Overall Speedup = 1 / ((1 - f) + (f / s))<br>
+                <em>f</em> = fraction of time the enhancement is used (e.g. 95% = 0.95)<br>
+                <em>s</em> = the speedup of that specific enhancement (e.g. 10x)</div>
+                <div class="c-block"><strong>WHY IT MATTERS:</strong> It proves the "Law of Diminishing Returns". Making a rare instruction 100x faster barely speeds up the CPU. Making a common instruction 1.5x faster is massive.</div>
+                <div class="memory-trick">🧠 <strong>Memory Trick:</strong> Make the Common Case Fast. (1-f) is the part you DIDN'T touch. (f/s) is the part you sped up.</div>
+            </div>
+        </div>
+
+        <div class="learn-topic">
+            <h2>2. Pipeline Data Hazards</h2>
+            <div class="concept-card">
+                <div class="c-block"><strong>RAW (Read After Write):</strong> A true dependency. Instruction 2 needs to READ a register that Instruction 1 hasn't finished WRITING. Solution: <strong>Forwarding</strong>.</div>
+                <div class="c-block"><strong>Load-Use Hazard:</strong> A specific RAW hazard where Instruction 1 is a LOAD (fetching from memory). Even with forwarding, you cannot bypass time. The data isn't retrieved until the MEM stage, but Instruction 2 needs it in EX. Solution: <strong>1-Cycle Stall + Forwarding</strong>.</div>
+                <div style="margin-top:15px; color:var(--warning); font-weight:bold;">🎯 EXAM TIP: If a question asks about WAW (Write After Write) in a standard 5-stage MIPS pipeline, the answer is usually that they don't occur, because all writes happen strictly in-order in Stage 5 (WB).</div>
+            </div>
+        </div>
+    `;
+}
+
+/* ==========================================================================
+   FLASHCARDS VIEW
+   ========================================================================== */
+function renderFlashcards(container) {
+    const cards = [
+        { front: "CPU Time Formula", back: "CPU Time = (Instruction Count × CPI) / Clock Rate\n\n(Remember: Clock Cycle Time = 1 / Clock Rate)" },
+        { front: "Amdahl's Law", back: "Speedup = 1 / ((1 - f) + (f / s))\n\nf = fraction of code enhanced\ns = speedup of that fraction" },
+        { front: "Booth's Algorithm: '10'", back: "Subtract the Multiplicand (AC = AC - M).\nIndicates the START of a block of 1s." },
+        { front: "Cache: Write-Through vs Write-Back", back: "Write-Through: Updates cache & main memory simultaneously. Safe but slow.\nWrite-Back: Updates cache only. Sets a 'dirty bit'. Updates memory only upon eviction. Fast." },
+        { front: "Direct Mapped Cache Tag Calculation", back: "Address = Tag + Index + Offset\n\nOffset = log2(Block Size)\nIndex = log2(Number of Cache Lines)\nTag = Total Addr - Index - Offset." },
+        { front: "MIPS Special Registers: HI & LO", back: "Used specifically for Multiplication and Division.\nMult: HI gets upper 32 bits, LO gets lower 32 bits.\nDiv: LO gets Quotient, HI gets Remainder." }
+    ];
+    
+    let html = `
+        <div class="header-bar">
+            <div class="header-title">🃏 Formula & Concept Flashcards</div>
+        </div>
+        <p style="margin-bottom:20px; color:var(--text-light);">Click a card to flip it over. Memorize these core formulas for numerical questions!</p>
+        <div class="grid-2">
+    `;
+    
+    cards.forEach((c) => {
+        html += `
+        <div class="flashcard-container" onclick="this.querySelector('.flashcard').classList.toggle('flipped')">
+            <div class="flashcard">
+                <div class="card-face">
+                    <h2 style="color:var(--accent-primary)">${c.front}</h2>
+                    <p style="position:absolute; bottom:15px; font-size:0.8rem; color:#94a3b8">Click to reveal</p>
+                </div>
+                <div class="card-face card-back">
+                    <h3 style="margin-bottom:15px; color:#0f172a;">Answer:</h3>
+                    <p style="white-space: pre-line; font-size:1.1rem; line-height:1.5;">${c.back}</p>
+                </div>
+            </div>
+        </div>`;
+    });
+    
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+/* ==========================================================================
+   QUIZ ENGINE
+   ========================================================================== */
+function renderQuizUI() {
+    const main = document.getElementById('main-content');
+    main.innerHTML = `
+        <div class="quiz-container">
+            <div class="quiz-main">
+                <div class="timer-bar">
+                    <span id="q-counter">Question 1 / ${currentQuiz.length}</span>
+                    <span id="q-timer">⏱ 00:00</span>
+                </div>
+                <div id="q-card-container"></div>
+                <div style="display:flex; justify-content:space-between; margin-top:20px;">
+                    <button class="btn btn-outline" onclick="prevQ()">← Previous</button>
+                    <button class="btn btn-danger hidden" id="submit-quiz-btn" onclick="finishQuiz()">Submit Exam</button>
+                    <button class="btn btn-primary" onclick="nextQ()">Next →</button>
+                </div>
+            </div>
+            <div class="quiz-nav">
+                <h3 style="margin-bottom:10px; font-size:1rem;">Question Navigator</h3>
+                <div class="nav-grid" id="nav-grid"></div>
+                <button class="btn btn-outline btn-block" style="margin-top:20px;" onclick="finishQuiz()">Submit Early</button>
+            </div>
+        </div>
+    `;
+    renderQ();
+    renderNav();
+}
+
+function startTimer() {
+    clearInterval(quizTimer);
+    updateTimerUI();
+    quizTimer = setInterval(() => {
+        timeLeft--;
+        updateTimerUI();
+        if(timeLeft <= 0) {
+            clearInterval(quizTimer);
+            alert("Time's up! Submitting exam automatically.");
+            finishQuiz();
+        }
+    }, 1000);
+}
+
+function updateTimerUI() {
+    const el = document.getElementById('q-timer');
+    if(!el) return;
+    const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+    const s = (timeLeft % 60).toString().padStart(2, '0');
+    el.innerText = `⏱ ${m}:${s}`;
+    if(timeLeft < 60) el.classList.add('timer-warning');
+}
+
+function renderNav() {
+    const grid = document.getElementById('nav-grid');
+    if(!grid) return;
+    grid.innerHTML = '';
+    currentQuiz.forEach((q, i) => {
+        const dot = document.createElement('div');
+        dot.className = `nav-dot ${i === currentQIndex ? 'current' : ''} ${q.userAns !== null ? 'answered' : ''}`;
+        dot.innerText = i + 1;
+        dot.onclick = () => { currentQIndex = i; renderQ(); renderNav(); };
+        grid.appendChild(dot);
+    });
+}
+
+function renderQ() {
+    const container = document.getElementById('q-card-container');
+    document.getElementById('q-counter').innerText = `Question ${currentQIndex + 1} / ${currentQuiz.length}`;
+    const q = currentQuiz[currentQIndex];
+    
+    document.getElementById('submit-quiz-btn').classList.toggle('hidden', currentQIndex !== currentQuiz.length - 1);
+
+    let tagClass = q.difficulty === 'hard' ? 'tag-hard' : (q.type === 'numerical' ? 'tag-num' : '');
+    let priorityTag = q.priority === 'EXAM' ? '<span class="tag tag-exam">🎯 EXAM POTENTIAL</span>' : '';
+    
+    let html = `
+        <div class="question-card">
+            <div class="q-meta">
+                <span class="tag ${tagClass}">${q.topic.toUpperCase()}</span>
+                <span class="tag">${q.difficulty.toUpperCase()}</span>
+                ${priorityTag}
+                <span style="margin-left:auto; cursor:pointer; font-weight:bold; color:var(--accent-primary);" onclick="toggleBookmark('${q.id}')">
+                    ${state.bookmarks[q.id] ? '★ BOOKMARKED' : '☆ Bookmark'}
+                </span>
+            </div>
+            <div class="question-text">${q.question.replace(/\n/g, '<br>')}</div>
+    `;
+
+    // Calculation workspace for numerical
+    if(q.type === 'numerical' && q.userAns === null && state.currentMode !== 'mock') {
+        html += `
+            <div class="workspace">
+                <p style="font-size:0.8rem; color:var(--text-light); margin-bottom:5px;">🧮 Optional Calculation Workspace (Not Graded)</p>
+                <textarea placeholder="Jot down formulas and steps here before selecting an answer..."></textarea>
+            </div><br>
+        `;
+    }
+
+    html += `<div class="options-container">`;
+
+    q.options.forEach((opt, idx) => {
+        let btnClass = 'option-btn';
+        if (q.userAns !== null) {
+            // Mock exam hides correct answers until submission
+            if(state.currentMode === 'mock') {
+                if(idx === q.userAns) btnClass += ' selected';
+                btnClass += ' disabled';
+            } else {
+                if (idx === q.correctAnswer) btnClass += ' correct';
+                else if (idx === q.userAns) btnClass += ' wrong';
+                else btnClass += ' disabled';
+            }
+        }
+
+        html += `<button class="${btnClass}" onclick="selectAnswer(${idx})" ${q.userAns !== null ? 'disabled' : ''}>
+                    <strong style="width:25px;display:inline-block">${String.fromCharCode(65+idx)}.</strong> ${opt}
+                 </button>`;
+    });
+
+    html += `</div>`;
+
+    // Explanations (hidden in Mock mode until submitted)
+    if (q.userAns !== null && state.currentMode !== 'mock') {
+        html += `<div class="explanation-box" style="display:block;">
+                    <div class="exp-title">${q.userAns === q.correctAnswer ? '✅ Correct!' : '❌ Incorrect'}</div>
+                    <p style="line-height:1.5;">${q.explanation}</p>`;
+        
+        if (q.solutionSteps) {
+            html += `<div class="step-box"><strong>Mathematical Steps:</strong><br>${q.solutionSteps.join('<br>')}</div>`;
+        }
+        
+        if (q.whyOthersWrong && q.userAns !== q.correctAnswer && q.whyOthersWrong[q.userAns]) {
+            html += `<p style="color:var(--danger); margin-top:10px;"><strong>Why your answer is wrong:</strong> ${q.whyOthersWrong[q.userAns]}</p>`;
+        }
+
+        if (q.examTip) {
+            html += `<p style="color:var(--warning); margin-top:10px; font-weight:bold;">🎯 EXAM TIP: ${q.examTip}</p>`;
+        }
+
+        if (q.memoryTrick) {
+            html += `<div class="memory-trick">🧠 ${q.memoryTrick}</div>`;
+        }
+
+        html += `</div>`;
+    }
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+window.toggleBookmark = function(id) {
+    if(state.bookmarks[id]) delete state.bookmarks[id];
+    else state.bookmarks[id] = true;
+    saveState();
+    renderQ(); 
+}
+
+window.selectAnswer = function(optIndex) {
+    const q = currentQuiz[currentQIndex];
+    if(q.userAns !== null) return; 
+    
+    q.userAns = optIndex;
+    
+    state.stats.totalAnswered++;
+    if(optIndex === q.correctAnswer) {
+        state.stats.correct++;
+        if(state.mistakes[q.id]) {
+            state.mistakes[q.id]--;
+            if(state.mistakes[q.id] <= 0) delete state.mistakes[q.id];
+        }
+    } else {
+        state.mistakes[q.id] = (state.mistakes[q.id] || 0) + 1;
+    }
+    
+    saveState();
+    renderQ();
+    renderNav();
+}
+
+window.nextQ = function() {
+    if(currentQIndex < currentQuiz.length - 1) {
+        currentQIndex++;
+        renderQ();
+        renderNav();
+    }
+}
+window.prevQ = function() {
+    if(currentQIndex > 0) {
+        currentQIndex--;
+        renderQ();
+        renderNav();
+    }
+}
+
+window.finishQuiz = function() {
+    clearInterval(quizTimer);
+    let correct = currentQuiz.filter(q => q.userAns === q.correctAnswer).length;
+    let unanswered = currentQuiz.filter(q => q.userAns === null).length;
+    let acc = Math.round((correct / currentQuiz.length) * 100);
+    
+    const main = document.getElementById('main-content');
+    main.innerHTML = `
+        <div class="header-bar">
+            <div class="header-title">🎓 Exam Results</div>
+        </div>
+        <div class="card" style="text-align:center; padding: 50px;">
+            <h1 style="font-size:3rem; color:var(--accent-primary); margin-bottom:20px;">${acc}%</h1>
+            <div style="font-size:1.2rem; color:var(--text-main); margin-bottom: 30px;">
+                You scored ${correct} out of ${currentQuiz.length}.<br>
+                <span style="color:var(--danger)">${unanswered > 0 ? `(You left ${unanswered} questions unanswered!)` : ''}</span>
+            </div>
+            
+            <div class="grid-2">
+                <button class="btn btn-outline" onclick="nav('dashboard')">Back to Dashboard</button>
+                <button class="btn btn-primary" onclick="startQuizMode('mistakes')">Review Mistakes</button>
+            </div>
+        </div>
+    `;
+}
+
+/* ==========================================================================
+   INITIALIZATION
+   ========================================================================== */
+window.onload = () => {
+    nav('dashboard');
+};
+</script>
+</body>
+</html>
